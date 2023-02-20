@@ -1,4 +1,5 @@
-console.log('lolkek');
+import {Menu, MENU_RENDER_TYPES} from './components/Menu/Menu.js';
+import {safe} from './utils/safe.js';
 
 const rootElement = document.getElementById('root');
 const menuElement = document.createElement('aside');
@@ -32,37 +33,22 @@ const config = {
         href: '/profile',
         render: renderProfile,
         key: 'profile',
-    }
+    },
+    // Для ознакомления!
+    // danger: {
+    //     name: safe(`Опасность <iframe src="https://example.com" onload="alert('Упс, сайт взломали!')"></iframe>`),
+    //     href: '/',
+    //     render: () => {},
+    //     key: 'danger',
+    // }
 };
-
-function ajax(method, url, body = null, callback) {
-    const xhr = new XMLHttpRequest();
-    xhr.open(method, url, true);
-    xhr.withCredentials = true;
-
-    xhr.addEventListener('readystatechange', function () {
-        if (xhr.readyState !== XMLHttpRequest.DONE) return;
-
-        callback(xhr.status, xhr.responseText);
-    });
-
-    if (body) {
-        xhr.setRequestHeader('Content-type', 'application/json; charset=utf8');
-        xhr.send(JSON.stringify(body));
-        return;
-    }
-
-    xhr.send();
-}
 
 function renderFeed(parent) {
     const feedElement = document.createElement('div');
 
-    ajax(
-        'GET',
-        '/feed',
-        null,
-        (status, responseString) => {
+    Ajax.get({
+        url: '/feed',
+        callback: (status, responseString) => {
             let isAuthorized = false;
 
             if (status === 200) {
@@ -86,7 +72,7 @@ function renderFeed(parent) {
                 });
             }
         }
-    );
+    })
 
     parent.appendChild(feedElement);
 }
@@ -111,11 +97,10 @@ function renderLogin(parent) {
         const email = emailInput.value.trim();
         const password = passwordInput.value;
 
-        ajax(
-            'POST',
-            '/login',
-            {email, password},
-            status => {
+        Ajax.post({
+            url: '/login',
+            body: {email, password},
+            callback: status => {
                 if (status === 200) {
                     goToPage(config.profile);
                     return;
@@ -123,8 +108,7 @@ function renderLogin(parent) {
 
                 alert('Неверный емейл или пароль');
             }
-        );
-
+        })
     });
 
     parent.appendChild(form);
@@ -159,33 +143,17 @@ function createInput(type, text, name) {
 }
 
 function renderMenu(parent) {
-    Object
-        .entries(config)
-        .map(([key, {href, name}], index) => {
-            const menuElement = document.createElement('a');
-            menuElement.textContent = name;
-            menuElement.href = href;
-            menuElement.dataset.section = key;
-
-            if (index === 0) {
-                menuElement.classList.add('active');
-            }
-
-            return menuElement;
-        })
-        .forEach((e) => parent.appendChild(e))
-    ;
+    const menu = new Menu(parent);
+    menu.config = config;
+    menu.render(MENU_RENDER_TYPES.STRING);
 }
 
 function renderProfile(parent) {
     const profileElement = document.createElement('div');
 
-
-    ajax(
-        'GET',
-        '/me',
-        null,
-        (status, responseString) => {
+    Ajax.get({
+        url: '/me',
+        callback: (status, responseString) => {
             let isAuthorized = false;
 
             if (status === 200) {
@@ -212,7 +180,7 @@ function renderProfile(parent) {
                 });
             }
         }
-    );
+    })
 
     parent.appendChild(profileElement);
 }
